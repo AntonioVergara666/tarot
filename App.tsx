@@ -1,9 +1,37 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { TAROT_DECK } from './constants';
 import { DrawnCard, SpreadType, InterpretationResponse } from './types';
 import Card from './components/Card';
 import { interpretSpread } from './services/gemini';
+
+const Logo: React.FC = () => (
+  <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center animate-float">
+    {/* Mystic Sun/Moon SVG Logo */}
+    <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+      <defs>
+        <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#d97706" />
+        </radialGradient>
+      </defs>
+      <circle cx="100" cy="100" r="40" fill="url(#sunGrad)" />
+      <g className="animate-spin-slow" style={{ transformOrigin: 'center' }}>
+        {[...Array(12)].map((_, i) => (
+          <path
+            key={i}
+            d="M100,20 L110,50 L90,50 Z"
+            fill="#d97706"
+            transform={`rotate(${i * 30} 100 100)`}
+          />
+        ))}
+      </g>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#d97706" strokeWidth="1" strokeDasharray="10 5" />
+      <path d="M100,70 A30,30 0 0,1 100,130 A30,30 0 0,0 100,70" fill="#05050a" opacity="0.8" />
+    </svg>
+    <div className="absolute text-amber-200 text-3xl font-cinzel">✧</div>
+  </div>
+);
 
 const App: React.FC = () => {
   const [readingStarted, setReadingStarted] = useState(false);
@@ -18,11 +46,10 @@ const App: React.FC = () => {
     if (spreadType === SpreadType.CROSSROADS) count = 2;
     if (spreadType === SpreadType.TIMELINE) count = 3;
 
-    // Shuffle and pick cards
-    const shuffled = [...TAROT_DECK].sort(() => 0.5 - Math.random());
+    const shuffled = [...TAROT_DECK].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, count).map(card => ({
       card,
-      isReversed: Math.random() > 0.7, // 30% chance for reversed
+      isReversed: Math.random() > 0.65,
       isFlipped: false
     }));
 
@@ -33,89 +60,111 @@ const App: React.FC = () => {
   };
 
   const handleFlip = (index: number) => {
-    setDrawnCards(prev => prev.map((c, i) => i === index ? { ...c, isFlipped: true } : c));
+    setDrawnCards(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], isFlipped: true };
+      return next;
+    });
   };
 
   const allFlipped = drawnCards.length > 0 && drawnCards.every(c => c.isFlipped);
 
-  const getInterpretation = async () => {
-    if (!allFlipped) return;
+  const handleInterpret = async () => {
+    if (!allFlipped || isInterpreting) return;
     setIsInterpreting(true);
     setError(null);
     try {
       const result = await interpretSpread(spreadType, drawnCards);
       setInterpretation(result);
+      setTimeout(() => {
+        document.getElementById('reading-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch (err: any) {
-      setError(err.message || "An unexpected shadow clouded our vision.");
+      setError(err.message || "The celestial whispers were unclear.");
     } finally {
       setIsInterpreting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative pb-20">
+    <div className="min-h-screen flex flex-col relative pb-20 overflow-hidden">
+      {/* Mystical Background Layers */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-900/10 blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-amber-900/10 blur-[120px] rounded-full"></div>
+      </div>
+
       {/* Sparkles Decoration */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+        {[...Array(40)].map((_, i) => (
           <div 
             key={i}
-            className="sparkle absolute text-amber-300 opacity-0 text-xl"
+            className="sparkle absolute text-amber-400/20 text-[8px]"
             style={{ 
               top: `${Math.random() * 100}%`, 
               left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${3 + Math.random() * 4}s`
             }}
-          >✧</div>
+          >✦</div>
         ))}
       </div>
 
-      {/* Header */}
-      <header className="pt-10 pb-6 text-center z-10">
-        <h1 className="text-4xl md:text-6xl font-cinzel font-bold text-amber-500 tracking-widest drop-shadow-lg">
-          CELESTIAL TAROT
+      <header className="pt-20 pb-16 text-center z-20">
+        <h1 className="text-5xl md:text-7xl font-cinzel font-bold text-amber-500 tracking-[0.3em] drop-shadow-[0_0_20px_rgba(245,158,11,0.5)] uppercase">
+          Celestial Tarot
         </h1>
-        <p className="mt-2 text-blue-200/60 font-cinzel italic text-sm md:text-base">
-          Unlock the secrets written in the stars
-        </p>
+        <div className="mt-8 flex items-center justify-center gap-8 opacity-40">
+           <div className="h-[2px] w-20 bg-gradient-to-r from-transparent to-amber-500"></div>
+           <p className="text-blue-100 font-cinzel italic text-xs tracking-[0.5em] uppercase">
+             Woven in the loom of destiny
+           </p>
+           <div className="h-[2px] w-20 bg-gradient-to-l from-transparent to-amber-500"></div>
+        </div>
       </header>
 
-      <main className="flex-grow flex flex-col items-center justify-center px-4 z-10">
+      <main className="flex-grow flex flex-col items-center justify-center px-6 z-20 w-full max-w-7xl mx-auto">
         {!readingStarted ? (
-          <div className="max-w-md w-full bg-black/40 backdrop-blur-md p-8 rounded-2xl border border-amber-600/30 text-center shadow-2xl">
-            <div className="text-amber-500 text-5xl mb-6">🔮</div>
-            <h2 className="text-2xl font-cinzel mb-4">Choose Your Path</h2>
-            <div className="space-y-4">
+          <div className="max-w-xl w-full bg-[#0a0a14]/60 backdrop-blur-2xl p-12 md:p-16 rounded-[3rem] border border-amber-500/10 text-center shadow-[0_0_80px_rgba(0,0,0,0.7)]">
+            <div className="mb-12 flex justify-center">
+               <Logo />
+            </div>
+            
+            <h2 className="text-3xl font-cinzel text-amber-100 mb-10 tracking-widest uppercase border-b border-amber-500/10 pb-4 inline-block">Choose Your Spread</h2>
+            
+            <div className="grid gap-4 mb-12">
               {Object.values(SpreadType).map(type => (
                 <button
                   key={type}
                   onClick={() => setSpreadType(type)}
-                  className={`w-full py-3 px-6 rounded-lg font-cinzel border transition-all ${
+                  className={`py-5 px-10 rounded-2xl font-cinzel text-sm border transition-all duration-500 flex items-center justify-between group overflow-hidden relative ${
                     spreadType === type 
-                    ? 'bg-amber-600 border-amber-400 text-white' 
-                    : 'bg-white/5 border-amber-600/30 text-amber-500 hover:bg-white/10'
+                    ? 'bg-amber-600/90 border-amber-400 text-white shadow-xl scale-[1.02]' 
+                    : 'bg-white/5 border-white/5 text-stone-400 hover:border-amber-500/30 hover:text-amber-100'
                   }`}
                 >
-                  {type}
+                  <span className="tracking-[0.2em] relative z-10 uppercase font-bold">{type}</span>
+                  <span className={`text-lg transition-all duration-500 ${spreadType === type ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90 group-hover:opacity-100 group-hover:rotate-0'}`}>✦</span>
                 </button>
               ))}
             </div>
+
             <button 
               onClick={startReading}
-              className="mt-8 w-full py-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl font-cinzel font-bold tracking-widest shadow-lg transform active:scale-95 transition-all"
+              className="w-full py-6 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-white rounded-[2rem] font-cinzel font-bold tracking-[0.4em] shadow-2xl transform active:scale-[0.98] transition-all uppercase text-lg"
             >
-              DRAW CARDS
+              Draw Cards
             </button>
           </div>
         ) : (
-          <div className="w-full max-w-5xl flex flex-col items-center">
+          <div className="w-full flex flex-col items-center">
             
-            {/* Cards Layout */}
-            <div className={`flex flex-wrap justify-center gap-8 mb-12`}>
+            <div className="flex flex-wrap justify-center gap-12 mb-24 min-h-[500px]">
               {drawnCards.map((dc, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <div className="mb-2 text-xs font-cinzel text-amber-400/60 uppercase tracking-widest">
-                    {spreadType === SpreadType.TIMELINE ? (['Past', 'Present', 'Future'][i]) : 
-                     spreadType === SpreadType.CROSSROADS ? (['Situation', 'Challenge'][i]) : 
+                <div key={i} className="flex flex-col items-center group">
+                  <div className="mb-6 text-[11px] font-cinzel text-amber-500/50 uppercase tracking-[0.6em] font-bold group-hover:text-amber-500 transition-colors">
+                    {spreadType === SpreadType.TIMELINE ? (['The Past', 'The Present', 'The Future'][i]) : 
+                     spreadType === SpreadType.CROSSROADS ? (['Your Path', 'The Challenge'][i]) : 
                      'Spirit Message'}
                   </div>
                   <Card drawnCard={dc} onFlip={() => handleFlip(i)} index={i} />
@@ -123,75 +172,102 @@ const App: React.FC = () => {
               ))}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col items-center space-y-10 min-h-[160px]">
               {allFlipped && !interpretation && !isInterpreting && (
                 <button 
-                  onClick={getInterpretation}
-                  className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-cinzel font-bold tracking-widest shadow-xl transition-all animate-bounce"
+                  onClick={handleInterpret}
+                  className="px-20 py-7 bg-white text-stone-950 rounded-full font-cinzel font-bold tracking-[0.4em] shadow-[0_0_50px_rgba(255,255,255,0.2)] transition-all hover:scale-105 active:scale-95 animate-pulse uppercase text-base"
                 >
-                  SEEK INTERPRETATION
+                  Reveal Wisdom
                 </button>
               )}
 
               {isInterpreting && (
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="font-cinzel text-amber-400 animate-pulse">Consulting the Oracles...</p>
+                <div className="flex flex-col items-center space-y-6">
+                  <div className="w-16 h-16 border-[3px] border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+                  <p className="font-cinzel text-amber-400 text-xs tracking-[0.5em] uppercase animate-pulse">Consulting the Ancestors...</p>
                 </div>
               )}
 
               {error && (
-                <div className="p-4 bg-red-900/40 border border-red-500 rounded-lg text-red-200 font-cinzel text-sm">
+                <div className="px-10 py-5 bg-red-950/50 border border-red-800/40 rounded-3xl text-red-100 font-cinzel text-[11px] tracking-[0.3em] uppercase">
                   {error}
                 </div>
               )}
 
-              <button 
-                onClick={() => setReadingStarted(false)}
-                className="text-amber-500/60 hover:text-amber-500 font-cinzel text-sm underline underline-offset-4"
-              >
-                Reset Reading
-              </button>
+              {!isInterpreting && (
+                <button 
+                  onClick={() => setReadingStarted(false)}
+                  className="text-amber-500/30 hover:text-amber-500 font-cinzel text-[10px] uppercase tracking-[0.5em] transition-all border-b border-transparent hover:border-amber-500/50"
+                >
+                  New Reading
+                </button>
+              )}
             </div>
 
-            {/* Interpretation Results */}
             {interpretation && (
-              <div className="mt-12 w-full bg-black/50 backdrop-blur-xl rounded-3xl border border-amber-500/30 p-8 md:p-12 shadow-2xl animate-fade-in-up">
-                <div className="max-w-3xl mx-auto space-y-12">
+              <div id="reading-results" className="mt-28 w-full bg-[#0a0a14]/90 backdrop-blur-3xl rounded-[4rem] border border-amber-500/10 p-12 md:p-24 shadow-[0_0_120px_rgba(0,0,0,0.8)] animate-fade-in relative">
+                <div className="max-w-5xl mx-auto space-y-24">
                   
-                  <section>
-                    <h3 className="text-3xl font-cinzel text-amber-500 mb-4 border-b border-amber-500/20 pb-2">The Celestial Summary</h3>
-                    <p className="text-lg leading-relaxed first-letter:text-5xl first-letter:font-cinzel first-letter:mr-2 first-letter:float-left first-letter:text-amber-400">
-                      {interpretation.summary}
+                  <header className="text-center space-y-10">
+                    <div className="text-amber-500 text-4xl opacity-30 tracking-[1em]">✧✧✧</div>
+                    <h3 className="text-5xl font-cinzel text-amber-500 tracking-[0.3em] uppercase drop-shadow-sm">The Oracle Speaks</h3>
+                    <p className="text-3xl leading-relaxed text-stone-100 font-lora italic max-w-3xl mx-auto font-light border-x border-amber-500/10 px-10">
+                      "{interpretation.summary}"
                     </p>
-                  </section>
+                  </header>
 
-                  <section className="grid md:grid-cols-2 gap-8">
+                  <div className="h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
+
+                  <section className="grid lg:grid-cols-2 gap-16">
                     {drawnCards.map((dc, i) => {
                       const reading = interpretation.cardReadings.find(r => r.cardId === dc.card.id);
                       return (
-                        <div key={i} className="bg-white/5 rounded-2xl p-6 border border-amber-500/10 hover:border-amber-500/30 transition-colors">
-                          <h4 className="font-cinzel text-amber-400 text-lg mb-2">
-                            {dc.card.name} <span className="text-[10px] opacity-50 ml-2">({dc.isReversed ? 'Reversed' : 'Upright'})</span>
-                          </h4>
-                          <p className="text-sm text-blue-100/80 italic mb-4">
-                            "{dc.isReversed ? dc.card.meaning_rev : dc.card.meaning_up}"
-                          </p>
-                          <p className="text-sm leading-relaxed text-slate-300">
-                            {reading?.insight || "Wisdom is unfolding..."}
-                          </p>
+                        <div key={i} className="relative group">
+                          <div className="absolute -inset-2 bg-gradient-to-br from-amber-500/10 to-transparent rounded-[3rem] blur-2xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
+                          <div className="relative bg-black/40 rounded-[3rem] p-12 border border-white/5 hover:border-amber-500/20 transition-all duration-700 flex flex-col h-full shadow-inner">
+                            <div className="flex items-center gap-6 mb-8">
+                               <div className="w-12 h-12 rounded-full bg-amber-950/50 border border-amber-500/30 flex items-center justify-center font-cinzel text-amber-500 text-sm shadow-lg">
+                                 {i + 1}
+                               </div>
+                               <h4 className="font-cinzel text-amber-400 text-2xl tracking-widest uppercase">
+                                 {dc.card.name}
+                               </h4>
+                            </div>
+                            <p className="text-stone-200 font-lora leading-loose text-lg italic mb-8 border-l-4 border-amber-500/10 pl-8 py-2">
+                              {reading?.insight || "Spirit is preparing your message..."}
+                            </p>
+                            <div className="mt-auto pt-8 flex items-center justify-between text-[11px] font-cinzel tracking-[0.3em] uppercase opacity-40">
+                               <span className="font-bold">Position {i + 1}</span>
+                               <span className={`font-bold ${dc.isReversed ? 'text-red-400' : 'text-green-400'}`}>
+                                 {dc.isReversed ? 'Reversed' : 'Upright'}
+                               </span>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
                   </section>
 
-                  <section className="bg-amber-600/10 p-6 rounded-2xl border border-amber-500/40">
-                    <h3 className="text-xl font-cinzel text-amber-500 mb-2">Final Guidance</h3>
-                    <p className="italic text-amber-200/90 leading-relaxed">
+                  <section className="relative bg-[#111] p-16 rounded-[4rem] border border-amber-500/10 text-center overflow-hidden shadow-2xl">
+                    <div className="absolute -top-10 -right-10 text-[12rem] text-amber-500/5 font-cinzel pointer-events-none select-none">✦</div>
+                    <h3 className="text-xs font-cinzel text-amber-500 mb-8 tracking-[0.8em] uppercase font-black">Celestial Counsel</h3>
+                    <p className="text-stone-100 font-lora text-2xl leading-relaxed italic max-w-3xl mx-auto border-y border-amber-500/10 py-10">
                       {interpretation.advice}
                     </p>
                   </section>
+                  
+                  <div className="text-center pt-16">
+                     <button 
+                       onClick={() => {
+                         setReadingStarted(false);
+                         window.scrollTo({ top: 0, behavior: 'smooth' });
+                       }}
+                       className="text-amber-500/40 hover:text-amber-500 font-cinzel text-xs tracking-[0.5em] uppercase border border-amber-500/20 px-16 py-6 rounded-full hover:bg-amber-500/5 transition-all font-bold"
+                     >
+                       Close the Vision
+                     </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -199,9 +275,14 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Footer Info */}
-      <footer className="mt-auto py-8 text-center text-amber-600/40 text-xs font-cinzel tracking-widest">
-        &copy; 2024 CELESTIAL TAROT • SPIRITUAL INSIGHT POWERED BY GEMINI
+      <footer className="mt-auto py-20 text-center z-20 opacity-30 group cursor-default">
+        <div className="inline-flex items-center gap-12 transition-all group-hover:gap-16">
+           <div className="h-px w-20 bg-amber-900"></div>
+           <p className="text-amber-600 text-[10px] font-cinzel tracking-[0.8em] uppercase group-hover:text-amber-400 transition-colors">
+             Celestial Tarot &bull; Insigh powered by Gemini
+           </p>
+           <div className="h-px w-20 bg-amber-900"></div>
+        </div>
       </footer>
     </div>
   );

@@ -10,16 +10,18 @@ export const interpretSpread = async (
 ): Promise<InterpretationResponse> => {
   const model = "gemini-3-flash-preview";
   
-  const cardDetails = drawnCards.map(c => 
-    `${c.card.name} (${c.isReversed ? 'Reversed' : 'Upright'})`
+  // Create a structured list of cards with their IDs for the prompt
+  const cardList = drawnCards.map(c => 
+    `{ id: "${c.card.id}", name: "${c.card.name}", orientation: "${c.isReversed ? 'Reversed' : 'Upright'}" }`
   ).join(', ');
 
-  const prompt = `Act as an expert Tarot Reader with 20 years of experience in Jungian archetypes and spiritual guidance. 
-Interpret the following Tarot spread: "${spreadName}".
-The cards drawn are: ${cardDetails}.
+  const prompt = `Act as an expert Tarot Reader. Interpret this spread: "${spreadName}".
+The cards drawn are: [${cardList}].
 
-Provide a mystical, insightful, and empowering interpretation.
-Focus on the connection between the cards.`;
+IMPORTANT: Your response must be in JSON. 
+For the "cardReadings" array, you MUST use the exact "id" provided for each card in the input list above.
+Provide a deep, spiritual, and contextual interpretation for each card and how they relate to each other.
+Do not use generic placeholder text. Give specific insights for the ${spreadName} context.`;
 
   const response = await ai.models.generateContent({
     model,
@@ -31,19 +33,19 @@ Focus on the connection between the cards.`;
         properties: {
           summary: {
             type: Type.STRING,
-            description: "A high-level mystical overview of the entire spread."
+            description: "A mystical overview of the whole reading."
           },
           advice: {
             type: Type.STRING,
-            description: "Practical and spiritual advice based on the reading."
+            description: "A final piece of actionable spiritual advice."
           },
           cardReadings: {
             type: Type.ARRAY,
             items: {
               type: Type.OBJECT,
               properties: {
-                cardId: { type: Type.STRING },
-                insight: { type: Type.STRING, description: "Detailed interpretation for this specific card in context." }
+                cardId: { type: Type.STRING, description: "The exact ID of the card being interpreted (e.g., '0', 'w1')." },
+                insight: { type: Type.STRING, description: "A detailed 2-3 sentence interpretation for this card." }
               },
               required: ["cardId", "insight"]
             }
@@ -55,10 +57,11 @@ Focus on the connection between the cards.`;
   });
 
   try {
-    const result = JSON.parse(response.text);
+    const text = response.text;
+    const result = JSON.parse(text);
     return result as InterpretationResponse;
   } catch (error) {
     console.error("Failed to parse Gemini response", error);
-    throw new Error("The celestial whispers were unclear. Please try again.");
+    throw new Error("The cosmic alignment was disrupted. Please try again.");
   }
 };
