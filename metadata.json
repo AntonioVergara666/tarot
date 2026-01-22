@@ -1,0 +1,5 @@
+{
+  "name": "Celestial Tarot",
+  "description": "A mystical and elegant Tarot reading application that draws cards and provides deep spiritual interpretations using the Gemini API.",
+  "requestFramePermissions": []
+}
